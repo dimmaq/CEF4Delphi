@@ -10,7 +10,7 @@
 // For more information about CEF4Delphi visit :
 //         https://www.briskbard.com/index.php?lang=en&pageid=cef
 //
-//        Copyright © 2017 Salvador Díaz Fau. All rights reserved.
+//        Copyright Â© 2017 Salvador DÐ½az Fau. All rights reserved.
 //
 // ************************************************************************
 // ************ vvvv Original license and comments below vvvv *************
@@ -50,7 +50,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Menus,
   Controls, Forms, Dialogs, StdCtrls, ExtCtrls, Types, ComCtrls, ClipBrd,
   {$ENDIF}
-  uMainForm, uCEFChromium, uCEFWindowParent, uCEFInterfaces, uCEFConstants;
+  uMainForm, uCEFChromium, uCEFWindowParent, uCEFInterfaces, uCEFConstants, uCEFTypes;
 
 type
   TChildForm = class(TForm)
@@ -76,7 +76,8 @@ type
     FCanClose : boolean;  // Set to True in TChromium.OnBeforeClose
     FClosing  : boolean;  // Set to True in the CloseQuery event.
 
-  protected
+    procedure LogInfoFake;
+    procedure OnLoadStart(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; transitionType: TCefTransitionType);   protected
     procedure BrowserCreatedMsg(var aMessage : TMessage); message CEFBROWSER_CREATED;
     procedure BrowserDestroyMsg(var aMessage : TMessage); message CEFBROWSER_DESTROY;
     procedure WMMove(var aMessage : TWMMove); message WM_MOVE;
@@ -118,6 +119,11 @@ begin
   PostMessage(Handle, CEFBROWSER_DESTROY, 0, 0);
 end;
 
+procedure TChildForm.LogInfoFake;
+begin
+
+end;
+
 procedure TChildForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   Action := caFree;
@@ -150,7 +156,17 @@ end;
 
 procedure TChildForm.FormShow(Sender: TObject);
 begin
+  Chromium1.OnLoadStart := OnLoadStart;
   Chromium1.CreateBrowser(CEFWindowParent1, '');
+end;
+
+procedure TChildForm.OnLoadStart(Sender: TObject; const browser: ICefBrowser;
+  const frame: ICefFrame; transitionType: TCefTransitionType);
+begin
+  if GetCurrentThreadId <> MainThreadID then
+    TThread.Synchronize(nil, LogInfoFake)
+  else
+    LogInfoFake()
 end;
 
 procedure TChildForm.WMMove(var aMessage : TWMMove);
