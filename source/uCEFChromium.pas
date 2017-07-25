@@ -376,8 +376,8 @@ type
       function    CreateClientHandler(aIsOSR : boolean) : boolean; overload;
       function    CreateClientHandler(var aClient : ICefClient) : boolean; overload;
       procedure   CloseBrowser(aForceClose : boolean);
-      function    CreateBrowser(const aBrowserParent : TWinControl = nil; const aWindowName : string = '') : boolean; overload;
-      function    CreateBrowser(aParentHandle : HWND; aParentRect : TRect; const aWindowName : string = '') : boolean; overload;
+      function    CreateBrowser(const aBrowserParent : TWinControl = nil; const aWindowName : string = ''; const aRequestContext: ICefRequestContext = nil) : boolean; overload;
+      function    CreateBrowser(const aParentHandle : HWND; const aParentRect : TRect; const aWindowName : string = ''; const aRequestContext: ICefRequestContext = nil) : boolean; overload;
 
       // Internal procedures.
       // Only tasks, visitors or callbacks should use them in the right thread/process.
@@ -839,7 +839,7 @@ begin
   FOnCookiesDeleted               := nil;
 end;
 
-function TChromium.CreateBrowser(const aBrowserParent : TWinControl; const aWindowName : string) : boolean;
+function TChromium.CreateBrowser(const aBrowserParent : TWinControl; const aWindowName : string; const aRequestContext: ICefRequestContext) : boolean;
 var
   TempHandle : HWND;
   TempRect : TRect;
@@ -855,10 +855,10 @@ begin
       TempRect   := rect(0, 0, 0, 0);
     end;
 
-  Result := CreateBrowser(TempHandle, TempRect, aWindowName);
+  Result := CreateBrowser(TempHandle, TempRect, aWindowName, aRequestContext);
 end;
 
-function TChromium.CreateBrowser(aParentHandle : HWND; aParentRect : TRect; const aWindowName : string = '') : boolean;
+function TChromium.CreateBrowser(const aParentHandle : HWND; const aParentRect : TRect; const aWindowName : string; const aRequestContext: ICefRequestContext) : boolean;
 begin
   Result := False;
 
@@ -879,10 +879,10 @@ begin
 
 
         if MultithreadApp then
-          Result := CreateBrowserHost(@FWindowInfo, FDefaultUrl, @FBrowserSettings, nil)
+          Result := CreateBrowserHost(@FWindowInfo, FDefaultUrl, @FBrowserSettings, aRequestContext)
          else
           begin
-            FBrowser := CreateBrowserHostSync(@FWindowInfo, FDefaultUrl, @FBrowserSettings, nil);
+            FBrowser := CreateBrowserHostSync(@FWindowInfo, FDefaultUrl, @FBrowserSettings, aRequestContext);
 
             if (FBrowser <> nil) then
               begin
@@ -1213,7 +1213,7 @@ end;
 
 function TChromium.GetMultithreadApp : boolean;
 begin
-  Result := True;
+  Result := System.IsMultiThread;
 
   try
     if (GlobalCEFApp <> nil) then Result := GlobalCEFApp.MultiThreadedMessageLoop;
