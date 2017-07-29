@@ -56,14 +56,14 @@ uses
 
 const
   CEF_SUPPORTED_VERSION_MAJOR   = 3;
-  CEF_SUPPORTED_VERSION_MINOR   = 3071;
-  CEF_SUPPORTED_VERSION_RELEASE = 1647;
+  CEF_SUPPORTED_VERSION_MINOR   = 3112;
+  CEF_SUPPORTED_VERSION_RELEASE = 1649;
   CEF_SUPPORTED_VERSION_BUILD   = 0;
 
-  CEF_CHROMEELF_VERSION_MAJOR   = 59;
+  CEF_CHROMEELF_VERSION_MAJOR   = 60;
   CEF_CHROMEELF_VERSION_MINOR   = 0;
-  CEF_CHROMEELF_VERSION_RELEASE = 3071;
-  CEF_CHROMEELF_VERSION_BUILD   = 109;
+  CEF_CHROMEELF_VERSION_RELEASE = 3112;
+  CEF_CHROMEELF_VERSION_BUILD   = 78;
 
   LIBCEF_DLL                    = 'libcef.dll';
   CHROMEELF_DLL                 = 'chrome_elf.dll';
@@ -113,6 +113,7 @@ type
       FEnableSpellingService         : boolean;
       FEnableMediaStream             : boolean;
       FEnableSpeechInput             : boolean;
+      FEnableGPU                     : boolean;
       FCheckCEFFiles                 : boolean;
       FLibLoaded                     : boolean;
       FSmoothScrolling               : boolean;
@@ -129,6 +130,7 @@ type
       FBrowserProcessHandler         : ICefBrowserProcessHandler;
       FRenderProcessHandler          : ICefRenderProcessHandler;
       FAppSettings                   : TCefSettings;
+      FDeviceScaleFactor             : single;
 
       procedure SetFrameworkDirPath(const aValue : ustring);
       procedure SetResourcesDirPath(const aValue : ustring);
@@ -203,6 +205,7 @@ type
       procedure   AddCustomCommandLine(const aCommandLine : string; const aValue : string = '');
       function    StartMainProcess : boolean;
       function    StartSubProcess : boolean;
+      procedure   UpdateDeviceScaleFactor;
 
       property Cache                       : ustring                         read FCache                          write FCache;
       property Cookies                     : ustring                         read FCookies                        write FCookies;
@@ -239,6 +242,7 @@ type
       property EnableSpellingService       : boolean                         read FEnableSpellingService          write FEnableSpellingService;
       property EnableMediaStream           : boolean                         read FEnableMediaStream              write FEnableMediaStream;
       property EnableSpeechInput           : boolean                         read FEnableSpeechInput              write FEnableSpeechInput;
+      property EnableGPU                   : boolean                         read FEnableGPU                      write FEnableGPU;
       property CheckCEFFiles               : boolean                         read FCheckCEFFiles                  write FCheckCEFFiles;
       property ChromeMajorVer              : uint16                          read FChromeVersionInfo.MajorVer;
       property ChromeMinorVer              : uint16                          read FChromeVersionInfo.MinorVer;
@@ -258,6 +262,7 @@ type
       property EnableHighDPISupport        : boolean                         read FEnableHighDPISupport           write FEnableHighDPISupport;
       property MuteAudio                   : boolean                         read FMuteAudio                      write FMuteAudio;
       property ReRaiseExceptions           : boolean                         read FReRaiseExceptions              write FReRaiseExceptions;
+      property DeviceScaleFactor           : single                          read FDeviceScaleFactor;
   end;
 
   TCefAppOwn = class(TCefBaseRefCountedOwn, ICefApp)
@@ -353,6 +358,7 @@ begin
   FEnableSpellingService         := True;
   FEnableMediaStream             := True;
   FEnableSpeechInput             := True;
+  FEnableGPU                     := True;
   FCustomCommandLines            := nil;
   FCustomCommandLineValues       := nil;
   FCheckCEFFiles                 := True;
@@ -368,6 +374,8 @@ begin
   FReRaiseExceptions             := False;
   FLibLoaded                     := False;
   FUpdateChromeVer               := aUpdateChromeVer;
+
+  UpdateDeviceScaleFactor;
 
   FAppSettings.size := SizeOf(TCefSettings);
   FillChar(FAppSettings, FAppSettings.size, 0);
@@ -583,6 +591,11 @@ begin
   end;
 end;
 
+procedure TCefApplication.UpdateDeviceScaleFactor;
+begin
+  FDeviceScaleFactor := GetDeviceScaleFactor;
+end;
+
 procedure TCefApplication.ShutDown;
 begin
   try
@@ -700,7 +713,8 @@ begin
     begin
       if FFlashEnabled then
         begin
-          commandLine.AppendSwitch('--enable-gpu-plugin');
+          if FEnableGPU then commandLine.AppendSwitch('--enable-gpu-plugin');
+
           commandLine.AppendSwitch('--enable-accelerated-plugins');
           commandLine.AppendSwitch('--enable-system-flash');
         end;
@@ -708,6 +722,12 @@ begin
       commandLine.AppendSwitchWithValue('--enable-spelling-service', IntToStr(Ord(FEnableSpellingService)));
       commandLine.AppendSwitchWithValue('--enable-media-stream',     IntToStr(Ord(FEnableMediaStream)));
       commandLine.AppendSwitchWithValue('--enable-speech-input',     IntToStr(Ord(FEnableSpeechInput)));
+
+      if not(FEnableGPU) then
+        begin
+          commandLine.AppendSwitch('--disable-gpu');
+          commandLine.AppendSwitch('--disable-gpu-compositing');
+        end;
 
       if FSmoothScrolling then
         commandLine.AppendSwitch('--enable-smooth-scrolling');

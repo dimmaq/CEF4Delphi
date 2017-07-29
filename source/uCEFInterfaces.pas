@@ -97,9 +97,11 @@ type
 
   TCefv8ValueArray         = array of ICefv8Value;
   TCefX509CertificateArray = array of ICefX509Certificate;
+  TCefBinaryValueArray     = array of ICefBinaryValue;
 
   TOnPdfPrintFinishedProc          = {$IFDEF DELPHI12_UP}reference to{$ENDIF} procedure(const path: ustring; ok: Boolean);
   TCefDomVisitorProc               = {$IFDEF DELPHI12_UP}reference to{$ENDIF} procedure(const document: ICefDomDocument);
+  TCefDomVisitorProc2              = {$IFDEF DELPHI12_UP}reference to{$ENDIF} procedure(const browser : ICefBrowser; const document: ICefDomDocument);
   TCefStringVisitorProc            = {$IFDEF DELPHI12_UP}reference to{$ENDIF} procedure(const str: ustring);
 
   TOnRegisterCustomSchemes         = {$IFDEF DELPHI12_UP}reference to{$ENDIF} procedure(const registrar: TCefSchemeRegistrarRef) {$IFNDEF DELPHI12_UP}of object{$ENDIF};
@@ -1309,10 +1311,10 @@ type
   ICefRenderHandler = interface(ICefBaseRefCounted)
   ['{1FC1C22B-085A-4741-9366-5249B88EC410}']
     procedure GetAccessibilityHandler(var aAccessibilityHandler : ICefAccessibilityHandler);
-    function  GetRootScreenRect(const browser: ICefBrowser; rect: PCefRect): Boolean;
-    function  GetViewRect(const browser: ICefBrowser; rect: PCefRect): Boolean;
-    function  GetScreenPoint(const browser: ICefBrowser; viewX, viewY: Integer; screenX, screenY: PInteger): Boolean;
-    function  GetScreenInfo(const browser: ICefBrowser; screenInfo: PCefScreenInfo): Boolean;
+    function  GetRootScreenRect(const browser: ICefBrowser; var rect: TCefRect): Boolean;
+    function  GetViewRect(const browser: ICefBrowser; var rect: TCefRect): Boolean;
+    function  GetScreenPoint(const browser: ICefBrowser; viewX, viewY: Integer; var screenX, screenY: Integer): Boolean;
+    function  GetScreenInfo(const browser: ICefBrowser; var screenInfo: TCefScreenInfo): Boolean;
     procedure OnPopupShow(const browser: ICefBrowser; show: Boolean);
     procedure OnPopupSize(const browser: ICefBrowser; const rect: PCefRect);
     procedure OnPaint(const browser: ICefBrowser; kind: TCefPaintElementType; dirtyRectsCount: NativeUInt; const dirtyRects: PCefRectArray; const buffer: Pointer; width, height: Integer);
@@ -1576,8 +1578,8 @@ type
     function GetDerEncoded: ICefBinaryValue;
     function GetPemEncoded: ICefBinaryValue;
     function GetIssuerChainSize: NativeUInt;
-    function GetDEREncodedIssuerChain(chainCount: NativeUInt): IInterfaceList;
-    function GetPEMEncodedIssuerChain(chainCount: NativeUInt): IInterfaceList;
+    procedure GetDEREncodedIssuerChain(chainCount: NativeUInt; var chain : TCefBinaryValueArray);
+    procedure GetPEMEncodedIssuerChain(chainCount: NativeUInt; var chain : TCefBinaryValueArray);
   end;
 
   ICefSslInfo = interface(ICefBaseRefCounted)
@@ -1746,11 +1748,11 @@ type
       selectedAcceptFilter: Integer; const callback: ICefFileDialogCallback): Boolean;
 
     procedure doOnGetAccessibilityHandler(var aAccessibilityHandler : ICefAccessibilityHandler);
-    function doOnGetRootScreenRect(const browser: ICefBrowser; rect: PCefRect): Boolean;
-    function doOnGetViewRect(const browser: ICefBrowser; rect: PCefRect): Boolean;
+    function doOnGetRootScreenRect(const browser: ICefBrowser; var rect: TCefRect): Boolean;
+    function doOnGetViewRect(const browser: ICefBrowser; var rect: TCefRect): Boolean;
     function doOnGetScreenPoint(const browser: ICefBrowser; viewX, viewY: Integer;
-      screenX, screenY: PInteger): Boolean;
-    function doOnGetScreenInfo(const browser: ICefBrowser; screenInfo: PCefScreenInfo): Boolean;
+      var screenX, screenY: Integer): Boolean;
+    function doOnGetScreenInfo(const browser: ICefBrowser; var screenInfo: TCefScreenInfo): Boolean;
     procedure doOnPopupShow(const browser: ICefBrowser; show: Boolean);
     procedure doOnPopupSize(const browser: ICefBrowser; const rect: PCefRect);
     procedure doOnPaint(const browser: ICefBrowser; kind: TCefPaintElementType;
