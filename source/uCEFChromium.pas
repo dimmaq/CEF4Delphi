@@ -65,6 +65,7 @@ type
       FVisitor                : ICefStringVisitor;
       FPDFPrintcb             : ICefPdfPrintCallback;
       FCookiDeletercb         : ICefDeleteCookiesCallback;
+      FClient                 : TCustomClientHandler;
       FHandler                : ICefClient;
       FBrowser                : ICefBrowser;
       FBrowserId              : Integer;
@@ -641,6 +642,7 @@ begin
   FInitialized            := False;
   FIsOSR                  := False;
   FDefaultUrl             := 'about:blank';
+  FClient                 := nil;
   FHandler                := nil;
   FOptions                := nil;
   FFontOptions            := nil;
@@ -699,6 +701,9 @@ begin
 
       FBrowser        := nil;
       FBrowserId      := 0;
+      if Assigned(FClient) then
+        FClient.Disconect();
+      FClient          := nil;
       FHandler        := nil;
       FVisitor        := nil;
       FPDFPrintcb     := nil;
@@ -742,7 +747,8 @@ begin
     if (FHandler = nil) then
       begin
         FIsOSR   := aIsOsr;
-        FHandler := TVCLClientHandler.Create(Self, FIsOSR);
+        FClient  := TVCLClientHandler.Create(Self, FIsOSR);
+        FHandler := FClient;
         Result   := True;
       end;
   except
@@ -2283,6 +2289,9 @@ begin
       FInitialized := False;
       FBrowser     := nil;
       FBrowserId   := 0;
+      if Assigned(FClient) then
+        FClient.Disconect();
+      FClient      := nil;
       FHandler     := nil;
     end;
 

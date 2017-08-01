@@ -135,6 +135,9 @@ type
     public
       constructor Create(const events: IChromiumEvents; renderer: Boolean); reintroduce; virtual;
       destructor  Destroy; override;
+
+      procedure Disconect;
+      property Events: IChromiumEvents read FEvents write FEvents;
   end;
 
   TVCLClientHandler = class(TCustomClientHandler)
@@ -527,6 +530,25 @@ begin
   FFindHandler        := nil;
 
   inherited Destroy;
+end;
+
+procedure TCustomClientHandler.Disconect;
+begin
+  FEvents             := nil;
+  FLoadHandler        := nil;
+  FFocusHandler       := nil;
+  FContextMenuHandler := nil;
+  FDialogHandler      := nil;
+  FKeyboardHandler    := nil;
+  FDisplayHandler     := nil;
+  FDownloadHandler    := nil;
+  FGeolocationHandler := nil;
+  FJsDialogHandler    := nil;
+  FLifeSpanHandler    := nil;
+  FRequestHandler     := nil;
+  FRenderHandler      := nil;
+  FDragHandler        := nil;
+  FFindHandler        := nil;
 end;
 
 function TCustomClientHandler.GetContextMenuHandler: ICefContextMenuHandler;
