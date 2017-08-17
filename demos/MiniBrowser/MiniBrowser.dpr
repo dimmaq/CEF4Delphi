@@ -51,148 +51,16 @@ uses
   SysUtils,
   {$ENDIF }
   uCEFApplication,
-  uCEFMiscFunctions,
-  uCEFSchemeRegistrar,
-  uCEFRenderProcessHandler,
-  uCEFv8Handler,
-  uCEFInterfaces,
-  uCEFDomVisitor,
-  uCEFDomNode,
-  uCEFConstants,
-  uCEFTypes,
-  uCEFTask,
-  uCEFProcessMessage,
   uMiniBrowser in 'uMiniBrowser.pas' {MiniBrowserFrm},
-  uTestExtension in 'uTestExtension.pas',
-  uHelloScheme in 'uHelloScheme.pas',
-  uPreferences in 'uPreferences.pas' {PreferencesFrm},
-  uSimpleTextViewer in 'uSimpleTextViewer.pas' {SimpleTextViewerFrm};
+  uPreferences in 'uPreferences.pas' {PreferencesFrm};
 
 {$R *.res}
 
 // CEF3 needs to set the LARGEADDRESSAWARE flag which allows 32-bit processes to use up to 3GB of RAM.
 {$SetPEFlags IMAGE_FILE_LARGE_ADDRESS_AWARE}
 
-var
-  TempProcessHandler : TCefCustomRenderProcessHandler;
-
-procedure SimpleDOMIteration(const aDocument: ICefDomDocument);
-var
-  TempHead, TempChild : ICefDomNode;
 begin
-  try
-    if (aDocument <> nil) then
-      begin
-        TempHead := aDocument.Head;
-
-        if (TempHead <> nil) then
-          begin
-            TempChild := TempHead.FirstChild;
-
-            while (TempChild <> nil) do
-              begin
-                CefLog('CEF4Delphi', 1, CEF_LOG_SEVERITY_ERROR, 'Head child element : ' + TempChild.Name);
-                TempChild := TempChild.NextSibling;
-              end;
-          end;
-      end;
-  except
-    on e : exception do
-      if CustomExceptionHandler('SimpleDOMIteration', e) then raise;
-  end;
-end;
-
-procedure SimpleNodeSearch(const aDocument: ICefDomDocument);
-const
-  NODE_ID = 'lst-ib';
-var
-  TempNode : ICefDomNode;
-begin
-  try
-    if (aDocument <> nil) then
-      begin
-        TempNode := aDocument.GetElementById(NODE_ID);
-
-        if (TempNode <> nil) then
-          CefLog('CEF4Delphi', 1, CEF_LOG_SEVERITY_ERROR, NODE_ID + ' element name : ' + TempNode.Name);
-
-        TempNode := aDocument.GetFocusedNode;
-
-        if (TempNode <> nil) then
-          CefLog('CEF4Delphi', 1, CEF_LOG_SEVERITY_ERROR, 'Focused element name : ' + TempNode.Name);
-      end;
-  except
-    on e : exception do
-      if CustomExceptionHandler('SimpleNodeSearch', e) then raise;
-  end;
-end;
-
-procedure DOMVisitor_OnDocAvailable(const browser: ICefBrowser; const document: ICefDomDocument);
-var
-  msg: ICefProcessMessage;
-begin
-  // This function is called from a different process.
-  // document is only valid inside this function.
-  // As an example, this function only writes the document title to the 'debug.log' file.
-  CefLog('CEF4Delphi', 1, CEF_LOG_SEVERITY_ERROR, 'document.Title : ' + document.Title);
-
-  // Simple DOM iteration example
-  SimpleDOMIteration(document);
-
-  // Simple DOM searches
-  SimpleNodeSearch(document);
-
-  // Sending back some custom results to the browser process
-  // Notice that the 'domvisitor' message name needs to be recognized in
-  // Chromium1ProcessMessageReceived
-  msg := TCefProcessMessageRef.New('domvisitor');
-  msg.ArgumentList.SetString(0, 'document.Title : ' + document.Title);
-  browser.SendProcessMessage(PID_BROWSER, msg);
-end;
-
-procedure ProcessHandler_OnCustomMessage(const browser: ICefBrowser; sourceProcess: TCefProcessId; const message: ICefProcessMessage);
-var
-  TempFrame : ICefFrame;
-  TempVisitor : TCefFastDomVisitor2;
-begin
-  if (browser <> nil) then
-    begin
-      TempFrame := browser.MainFrame;
-
-      if (TempFrame <> nil) then
-        begin
-          TempVisitor := TCefFastDomVisitor2.Create(browser, DOMVisitor_OnDocAvailable);
-          TempFrame.VisitDom(TempVisitor);
-        end;
-    end;
-end;
-
-procedure ProcessHandler_OnWebKitReady;
-begin
-{$IFDEF DELPHI14_UP}
-  // Registering the extension. Read this document for more details :
-  // https://bitbucket.org/chromiumembedded/cef/wiki/JavaScriptIntegration.md
-  TCefRTTIExtension.Register('myextension', TTestExtension);
-{$ENDIF}
-end;
-
-procedure GlobalCEFApp_OnRegCustomSchemes(const registrar: TCefSchemeRegistrarRef);
-begin
-  registrar.AddCustomScheme('hello', True, True, False, False, False, False);
-end;
-
-begin
-  // This ProcessHandler is used for the extension and the DOM visitor demos.
-  // It can be removed if you don't want those features.
-  TempProcessHandler                 := TCefCustomRenderProcessHandler.Create;
-  TempProcessHandler.MessageName     := 'retrievedom';   // same message name than TMiniBrowserFrm.VisitDOMMsg
-  TempProcessHandler.OnCustomMessage := ProcessHandler_OnCustomMessage;
-  TempProcessHandler.OnWebKitReady   := ProcessHandler_OnWebKitReady;
-
   GlobalCEFApp                      := TCefApplication.Create;
-  GlobalCEFApp.RemoteDebuggingPort  := 9000;
-  GlobalCEFApp.RenderProcessHandler := TempProcessHandler as ICefRenderProcessHandler;
-  GlobalCEFApp.OnRegCustomSchemes   := GlobalCEFApp_OnRegCustomSchemes;
 
   // In case you want to use custom directories for the CEF3 binaries, cache, cookies and user data.
 {
@@ -203,12 +71,6 @@ begin
   GlobalCEFApp.cookies              := 'cef\cookies';
   GlobalCEFApp.UserDataPath         := 'cef\User Data';
 }
-
-  // Enabling the debug log file for then DOM visitor demo.
-  // This adds lots of warnings to the console, specially if you run this inside VirtualBox.
-  // Remove it if you don't want to use the DOM visitor
-  GlobalCEFApp.LogFile              := 'debug.log';
-  GlobalCEFApp.LogSeverity          := LOGSEVERITY_ERROR;
 
   // Examples of command line switches.
   // **********************************
@@ -221,16 +83,12 @@ begin
 
   if GlobalCEFApp.StartMainProcess then
     begin
-      // You can register the Scheme Handler Factory here or later, for example in a context menu command.
-      CefRegisterSchemeHandlerFactory('hello', '', THelloScheme);
-
       Application.Initialize;
       {$IFDEF DELPHI11_UP}
       Application.MainFormOnTaskbar := True;
       {$ENDIF}
       Application.CreateForm(TMiniBrowserFrm, MiniBrowserFrm);
       Application.CreateForm(TPreferencesFrm, PreferencesFrm);
-      Application.CreateForm(TSimpleTextViewerFrm, SimpleTextViewerFrm);
       Application.Run;
     end;
 
