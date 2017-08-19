@@ -1633,7 +1633,7 @@ type
     function GetAsJpeg(scaleFactor: Single; quality: Integer;
       pixelWidth, pixelHeight: PInteger): ICefBinaryValue;
 
-    property Width: NativeUInt read GetHeight;
+    property Width: NativeUInt read GetWidth;
     property Height: NativeUInt read GetHeight;
   end;
 
