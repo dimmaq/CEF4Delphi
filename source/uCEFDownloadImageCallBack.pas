@@ -52,7 +52,7 @@ uses
 type
   TCefDownloadImageCallbackOwn = class(TCefBaseRefCountedOwn, ICefDownloadImageCallback)
     protected
-      procedure OnDownloadImageFinished(const imageUrl: ustring; httpStatusCode: Integer; const image: ICefImage); virtual;
+      procedure OnDownloadImageFinished(const imageUrl: ustring; httpStatusCode: Integer; const image: ICefImage); virtual; abstract;
 
     public
       constructor Create; virtual;
@@ -86,13 +86,6 @@ begin
   with PCefDownloadImageCallback(FData)^ do
     on_download_image_finished := cef_download_image_callback_on_download_image_finished;
 end;
-
-procedure TCefDownloadImageCallbackOwn.OnDownloadImageFinished(
-  const imageUrl: ustring; httpStatusCode: Integer; const image: ICefImage);
-begin
-
-end;
-
 
 constructor TCefFastDownloadImageCallback.Create(const proc: TOnDownloadImageFinishedProc);
 begin
